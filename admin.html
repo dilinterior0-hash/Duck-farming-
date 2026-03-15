@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DuckFarm — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --green:#16a34a;--green-light:#22c55e;--green-pale:#dcfce7;
+  --yellow:#ca8a04;--yellow-light:#fbbf24;
+  --red:#dc2626;--red-pale:#fee2e2;
+  --blue:#2563eb;--blue-pale:#dbeafe;
+  --bg:#f8fafc;--white:#fff;
+  --text:#0f172a;--text-dim:#64748b;
+  --border:#e2e8f0;
+  --shadow:0 1px 8px rgba(0,0,0,.08);
+  --shadow-lg:0 4px 24px rgba(0,0,0,.12);
+}
+body{background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);min-height:100vh;display:flex}
+
+/* SIDEBAR */
+.sidebar{width:240px;background:#14532d;min-height:100vh;position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column;transition:transform .3s}
+.sidebar-logo{padding:24px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo h1{font-family:'Baloo 2',cursive;font-size:22px;color:#fff;display:flex;align-items:center;gap:8px}
+.sidebar-logo p{font-size:11px;color:#86efac;margin-top:2px}
+.sidebar-nav{flex:1;padding:16px 0}
+.nav-link{display:flex;align-items:center;gap:12px;padding:12px 20px;color:#bbf7d0;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;border-left:3px solid transparent}
+.nav-link:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-link.active{background:rgba(255,255,255,.15);color:#fff;border-left-color:#22c55e}
+.nav-link .nicon{font-size:18px;width:24px}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1)}
+.sidebar-footer a{color:#86efac;font-size:12px;cursor:pointer;font-weight:700}
+
+/* MAIN CONTENT */
+.main{margin-left:240px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:'Baloo 2',cursive;font-size:20px;font-weight:800}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.admin-badge{background:var(--green-pale);color:var(--green);border:2px solid #bbf7d0;border-radius:20px;padding:5px 14px;font-size:13px;font-weight:800}
+.logout-btn{background:#fee2e2;color:var(--red);border:2px solid #fecaca;border-radius:10px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer}
+/* GLOBAL SEARCH */
+.global-search-wrap{position:relative;width:280px}
+.global-search-input{width:100%;padding:9px 14px 9px 36px;border:2px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;transition:border .2s;background:#f8fafc}
+.global-search-input:focus{border-color:var(--green);background:#fff}
+.global-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+.search-dropdown{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:2px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);z-index:999;max-height:320px;overflow-y:auto;display:none}
+.search-dropdown.open{display:block}
+.search-result-item{display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:background .15s}
+.search-result-item:last-child{border-bottom:none}
+.search-result-item:hover,.search-result-item.highlighted{background:#f0fdf4}
+.sri-avatar{width:36px;height:36px;background:var(--green-pale);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;font-weight:800;color:var(--green)}
+.sri-info{flex:1;min-width:0}
+.sri-name{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sri-meta{font-size:11px;color:var(--text-dim);margin-top:1px}
+.sri-bal{font-size:13px;font-weight:800;color:var(--green);white-space:nowrap}
+.search-empty{padding:18px;text-align:center;color:var(--text-dim);font-size:13px;font-weight:700}
+.row-highlight td{background:#dcfce7 !important;animation:rowPop .4s ease}
+@keyframes rowPop{0%{background:#bbf7d0}100%{background:#dcfce7}}
+@media(max-width:768px){.global-search-wrap{width:150px}.global-search-input{font-size:12px;padding:7px 10px 7px 30px}}
+
+/* PAGES */
+.page{display:none;flex:1;padding:24px 28px;animation:fadeIn .25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:16px;padding:20px;border:2px solid var(--border);box-shadow:var(--shadow)}
+.stat-card .sc-icon{font-size:32px;margin-bottom:8px}
+.stat-card .sc-val{font-family:'Baloo 2',cursive;font-size:26px;font-weight:800}
+.stat-card .sc-label{font-size:12px;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.stat-card .sc-sub{font-size:11px;margin-top:4px;font-weight:700}
+.stat-card.green{border-color:#bbf7d0;}.stat-card.green .sc-val{color:var(--green)}
+.stat-card.yellow{border-color:#fde68a;}.stat-card.yellow .sc-val{color:var(--yellow)}
+.stat-card.red{border-color:#fecaca;}.stat-card.red .sc-val{color:var(--red)}
+.stat-card.blue{border-color:#bfdbfe;}.stat-card.blue .sc-val{color:var(--blue)}
+
+/* CARD */
+.card{background:#fff;border-radius:16px;border:2px solid var(--border);box-shadow:var(--shadow);margin-bottom:20px}
+.card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'Baloo 2',cursive;font-size:17px;font-weight:800}
+.card-body{padding:20px}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;padding:10px 14px;text-align:left;font-size:11px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800}
+.badge-pending{background:#fef9c3;color:#92400e;border:1px solid #fde68a}
+.badge-approved{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.badge-rejected{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.badge-active{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+
+/* BUTTONS */
+.btn{padding:7px 14px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;border:none;transition:all .2s}
+.btn-green{background:var(--green-pale);color:var(--green);border:2px solid #bbf7d0}
+.btn-green:hover{background:var(--green);color:#fff}
+.btn-red{background:var(--red-pale);color:var(--red);border:2px solid #fecaca}
+.btn-red:hover{background:var(--red);color:#fff}
+.btn-yellow{background:#fef9c3;color:var(--yellow);border:2px solid #fde68a}
+.btn-yellow:hover{background:var(--yellow);color:#fff}
+.btn-blue{background:var(--blue-pale);color:var(--blue);border:2px solid #bfdbfe}
+.btn-primary{background:var(--green);color:#fff;padding:11px 20px;font-size:14px;border-radius:12px}
+.btn-primary:hover{background:#15803d}
+.btns-row{display:flex;gap:6px}
+
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:800;color:var(--text-dim);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.form-input{width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:11px;font-family:'Nunito',sans-serif;font-size:14px;color:var(--text);background:#fff;outline:none;transition:border .2s}
+.form-input:focus{border-color:var(--green)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex;animation:fadeIn .2s ease}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Baloo 2',cursive;font-size:20px;font-weight:800}
+.modal-close{font-size:20px;cursor:pointer;color:var(--text-dim);background:none;border:none;padding:4px}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#14532d;color:#fff;padding:14px 22px;border-radius:14px;font-size:14px;font-weight:700;z-index:1000;opacity:0;transition:opacity .3s;box-shadow:var(--shadow-lg);max-width:320px}
+.toast.show{opacity:1}
+
+/* PROFIT DISTRIBUTE */
+.user-profit-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.user-profit-row:last-child{border-bottom:none}
+.user-avatar{width:38px;height:38px;background:var(--green-pale);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.user-info{flex:1}
+.user-name-sm{font-size:14px;font-weight:800}
+.user-meta{font-size:11px;color:var(--text-dim);margin-top:1px}
+.profit-input{width:100px;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;text-align:center;outline:none}
+.profit-input:focus{border-color:var(--green)}
+
+/* ANALYTICS CHART placeholder */
+.chart-area{height:160px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:14px;font-weight:700;margin-bottom:16px;position:relative;overflow:hidden}
+.chart-bars{display:flex;align-items:flex-end;gap:8px;padding:0 20px;height:100%;width:100%}
+.chart-bar{flex:1;background:linear-gradient(180deg,#22c55e,#16a34a);border-radius:4px 4px 0 0;min-height:8px;transition:height .5s}
+.chart-label{position:absolute;bottom:6px;left:20px;font-size:10px;color:var(--green);font-weight:800}
+
+/* Mobile sidebar toggle */
+.menu-toggle{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text)}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .topbar{padding:12px 16px}
+  .page{padding:16px}
+  .menu-toggle{display:block}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h1>🦆 DuckFarm</h1>
+    <p>Admin Control Panel</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-link active" onclick="showPage('dashboard')"><span class="nicon">📊</span>Dashboard</div>
+    <div class="nav-link" onclick="showPage('users')"><span class="nicon">👥</span>Users</div>
+    <div class="nav-link" onclick="showPage('profits')"><span class="nicon">💰</span>Distribute Profits</div>
+    <div class="nav-link" onclick="showPage('requests')"><span class="nicon">📋</span>Pending Requests <span id="reqBadge" style="background:#dc2626;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px"></span></div>
+    <div class="nav-link" onclick="showPage('packages')"><span class="nicon">🛒</span>Packages</div>
+    <div class="nav-link" onclick="showPage('transactions')"><span class="nicon">🔄</span>Transactions</div>
+    <div class="nav-link" onclick="showPage('settings')"><span class="nicon">⚙️</span>Settings</div>
+  </nav>
+  <div class="sidebar-footer">
+    <a onclick="doLogout()">🚪 Logout</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div class="topbar-title" id="pageTitle">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <!-- GLOBAL SEARCH -->
+      <div class="global-search-wrap" id="globalSearchWrap">
+        <span class="global-search-icon">🔍</span>
+        <input class="global-search-input" id="globalSearchInput"
+          placeholder="Customer ID / Name / Email..."
+          oninput="onGlobalSearch()"
+          onkeydown="onSearchKey(event)"
+          autocomplete="off">
+        <div class="search-dropdown" id="searchDropdown"></div>
+      </div>
+      <span class="admin-badge">👑 Admin</span>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="pg-dashboard">
+    <div class="stats-grid" id="dashStats"></div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">📈 Revenue (Last 7 Days)</div></div>
+        <div class="card-body">
+          <div class="chart-area" id="revenueChart">
+            <div class="chart-bars" id="chartBars"></div>
+            <div class="chart-label">📊 Investment Revenue</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">⚡ Quick Actions</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn btn-primary" style="width:100%" onclick="showPage('profits')">💰 Distribute Profits</button>
+          <button class="btn btn-yellow" style="width:100%;padding:11px 20px;font-size:14px;border-radius:12px" onclick="showPage('requests')">📋 Review Requests</button>
+          <button class="btn btn-blue" style="width:100%;padding:11px 20px;font-size:14px;border-radius:12px" onclick="openModal('addUserModal')">➕ Add User</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">👥 Recent Users</div></div>
+      <div class="card-body table-wrap" id="recentUsers"></div>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div class="page" id="pg-users">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">👥 All Users</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" style="width:200px;padding:7px 12px;font-size:13px" placeholder="🔍 Search user..." id="userSearch" oninput="renderUsersTable()">
+          <button class="btn btn-primary" onclick="openModal('addUserModal')">➕ Add User</button>
+        </div>
+      </div>
+      <div class="card-body table-wrap" id="usersTable"></div>
+    </div>
+  </div>
+
+  <!-- PROFITS -->
+  <div class="page" id="pg-profits">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">💰 Distribute Profits to Users</div>
+        <button class="btn btn-primary" onclick="distributeAll()">✅ Send to All</button>
+      </div>
+      <div class="card-body">
+        <div style="background:#fef9c3;border:2px solid #fde68a;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e">
+          💡 Yahan har user ke wallet mein profit add kar sakte ho. Amount enter karo aur "Send" dabao — user ke app mein turant dikhai dega.
+        </div>
+        <div id="profitUserList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REQUESTS (Recharge + Withdraw + Duck Purchase) -->
+  <div class="page" id="pg-requests">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+      <div class="stat-card yellow" onclick="filterRequests('recharge')" style="cursor:pointer">
+        <div class="sc-icon">➕</div>
+        <div class="sc-val" id="reqRechargeCount">0</div>
+        <div class="sc-label">Recharge Requests</div>
+      </div>
+      <div class="stat-card red" onclick="filterRequests('withdrawal')" style="cursor:pointer">
+        <div class="sc-icon">💸</div>
+        <div class="sc-val" id="reqWithdrawCount">0</div>
+        <div class="sc-label">Withdrawal Requests</div>
+      </div>
+      <div class="stat-card blue" onclick="filterRequests('duck_purchase')" style="cursor:pointer">
+        <div class="sc-icon">🦆</div>
+        <div class="sc-val" id="reqDuckCount">0</div>
+        <div class="sc-label">Duck Purchase</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title" id="reqTableTitle">📋 All Pending Requests</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-green" onclick="filterRequests('all')">All</button>
+          <button class="btn btn-yellow" onclick="filterRequests('recharge')">Recharge</button>
+          <button class="btn btn-red" onclick="filterRequests('withdrawal')">Withdraw</button>
+          <button class="btn btn-blue" onclick="filterRequests('duck_purchase')">Ducks</button>
+        </div>
+      </div>
+      <div class="card-body table-wrap" id="requestsTable"></div>
+    </div>
+  </div>
+
+  <!-- PACKAGES -->
+  <div class="page" id="pg-packages">
+    <!-- Summary Cards -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px" id="pkgSummary"></div>
+    <!-- Main Table -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">🛒 Duck Packages &amp; Plans</div>
+        <button class="btn btn-primary" onclick="openAddPkg()">➕ New Package</button>
+      </div>
+      <div class="card-body table-wrap" id="packagesTable"></div>
+    </div>
+    <!-- Per-Member Controls -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">👤 Member-wise Purchase Limits</div>
+        <div style="font-size:12px;color:var(--text-dim);font-weight:600">Specific user ka duck kharidne ka limit set karo</div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <select class="form-input" style="flex:1;min-width:180px" id="limitUserId">
+            <option value="">-- User Select Karo --</option>
+          </select>
+          <select class="form-input" style="flex:1;min-width:180px" id="limitPkgId">
+            <option value="">-- Package Select Karo --</option>
+          </select>
+          <input class="form-input" type="number" style="width:130px" id="limitMaxQty" placeholder="Max ducks">
+          <button class="btn btn-primary" style="padding:11px 18px" onclick="saveMemberLimit()">💾 Set Limit</button>
+        </div>
+        <div id="memberLimitsTable"></div>
+      </div>
+    </div>
+    <!-- Hold Period Override -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">⏳ Member-wise Hold Period Override</div>
+        <div style="font-size:12px;color:var(--text-dim);font-weight:600">Kisi specific user ka hold period alag set karo</div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <select class="form-input" style="flex:1;min-width:180px" id="holdUserId">
+            <option value="">-- User Select Karo --</option>
+          </select>
+          <select class="form-input" style="flex:1;min-width:180px" id="holdPkgId">
+            <option value="">-- Package Select Karo --</option>
+          </select>
+          <input class="form-input" type="number" style="width:130px" id="holdDays" placeholder="Hold days">
+          <button class="btn btn-primary" style="padding:11px 18px" onclick="saveMemberHold()">💾 Set Hold</button>
+        </div>
+        <div id="memberHoldsTable"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS -->
+  <div class="page" id="pg-transactions">
+    <div class="card">
+      <div class="card-head"><div class="card-title">🔄 All Transactions</div></div>
+      <div class="card-body table-wrap" id="allTxns"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="pg-settings">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">🏦 UPI Settings</div></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Farm UPI ID</label>
+            <input class="form-input" id="farmUpi" value="duckfarm@upi" placeholder="farm@upi">
+          </div>
+          <div class="form-group">
+            <label class="form-label">UPI Name</label>
+            <input class="form-input" id="farmUpiName" value="DuckFarm Business" placeholder="Account name">
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">💾 Save UPI Settings</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">📢 Broadcast Message</div></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Message to All Users</label>
+            <textarea class="form-input" rows="4" id="broadcastMsg" placeholder="Message likhو..."></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="sendBroadcast()">📤 Send to All Users</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">🔐 Change Admin Password</div></div>
+        <div class="card-body">
+          <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" id="newPass" placeholder="New password"></div>
+          <div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" type="password" id="confirmPass" placeholder="Confirm password"></div>
+          <button class="btn btn-primary" onclick="changePassword()">🔐 Update Password</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">⚙️ App Settings</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#f8fafc;border-radius:10px">
+            <span style="font-weight:700;font-size:14px">New Registrations</span>
+            <button class="btn btn-green" onclick="showToast('✅ Registrations: Open')">🟢 Open</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#f8fafc;border-radius:10px">
+            <span style="font-weight:700;font-size:14px">Withdrawals</span>
+            <button class="btn btn-green" onclick="showToast('✅ Withdrawals: Enabled')">🟢 Enabled</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODALS =================== -->
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-bg" id="userDetailModal">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-head"><div class="modal-title">👤 User Details</div><button class="modal-close" onclick="closeModal('userDetailModal')">✕</button></div>
+    <div class="modal-body" id="userDetailBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-red" id="blockUserBtn">🚫 Block User</button>
+      <button class="btn btn-primary" onclick="closeModal('userDetailModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD USER MODAL -->
+<div class="modal-bg" id="addUserModal">
+  <div class="modal-box">
+    <div class="modal-head"><div class="modal-title">➕ Add New User</div><button class="modal-close" onclick="closeModal('addUserModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="newUserName" placeholder="Full name"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="newUserEmail" type="email" placeholder="Email"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="newUserPhone" placeholder="Mobile number"></div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="newUserPass" type="password" placeholder="Password"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Starting Balance (₹)</label><input class="form-input" id="newUserBal" type="number" placeholder="0" value="0"></div>
+        <div class="form-group"><label class="form-label">UPI ID</label><input class="form-input" id="newUserUpi" placeholder="upi@id"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addUserModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addNewUser()">✅ Add User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT PACKAGE MODAL -->
+<div class="modal-bg" id="addPkgModal">
+  <div class="modal-box" style="max-width:620px">
+    <div class="modal-head">
+      <div class="modal-title" id="pkgModalTitle">➕ Naya Package Banao</div>
+      <button class="modal-close" onclick="closeModal('addPkgModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Basic Info -->
+      <div style="background:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-weight:800;font-size:13px;color:var(--green);margin-bottom:10px">📦 Basic Information</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Package Name</label><input class="form-input" id="pkgName" placeholder="e.g. Gold Flock"></div>
+          <div class="form-group"><label class="form-label">Emoji / Icon</label><input class="form-input" id="pkgEmoji" placeholder="🦆" maxlength="4"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Package Status</label>
+            <select class="form-input" id="pkgStatus">
+              <option value="active">🟢 Active (Visible to users)</option>
+              <option value="inactive">🔴 Inactive (Hidden)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Member Level (Kaun kharid sakta hai)</label>
+            <select class="form-input" id="pkgMemberLevel">
+              <option value="all">🌍 Sabhi Members</option>
+              <option value="silver">🥈 Silver aur upar</option>
+              <option value="gold">🥇 Gold aur upar</option>
+              <option value="premium">👑 Premium only</option>
+              <option value="admin_assign">🔐 Sirf Admin assign kare</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Duck & Price -->
+      <div style="background:#fef9c3;border:2px solid #fde68a;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-weight:800;font-size:13px;color:var(--yellow);margin-bottom:10px">🦆 Duck &amp; Price Settings</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Duck Price (₹ per duck)</label>
+            <input class="form-input" type="number" id="pkgDuckPrice" placeholder="e.g. 100">
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Ek duck ki price</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Package mein Ducks</label>
+            <input class="form-input" type="number" id="pkgDucks" placeholder="e.g. 30">
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Is package mein total kitne ducks</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Total Package Price (₹)</label>
+            <input class="form-input" type="number" id="pkgPrice" placeholder="Auto-calculated ya manual">
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Duck Price × Ducks (ya custom set karo)</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Min. Purchase (ducks)</label>
+            <input class="form-input" type="number" id="pkgMinQty" placeholder="e.g. 1" value="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Max. Purchase per User (ducks)</label>
+            <input class="form-input" type="number" id="pkgMaxQty" placeholder="e.g. 100 (0 = unlimited)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Available Stock (ducks)</label>
+            <input class="form-input" type="number" id="pkgStock" placeholder="e.g. 500 (0 = unlimited)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Profit Settings -->
+      <div style="background:#dbeafe;border:2px solid #bfdbfe;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-weight:800;font-size:13px;color:var(--blue);margin-bottom:10px">💰 Profit Settings</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Profit Per Duck (₹)</label>
+            <input class="form-input" type="number" id="pkgProfit" placeholder="e.g. 16">
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Ek duck se total profit</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Profit Type</label>
+            <select class="form-input" id="pkgProfitType">
+              <option value="cycle_end">📅 Cycle End par ek baar</option>
+              <option value="monthly">📆 Monthly</option>
+              <option value="weekly">📋 Weekly</option>
+              <option value="daily">☀️ Daily</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Total Cycle Duration (Days)</label>
+            <input class="form-input" type="number" id="pkgDays" placeholder="e.g. 60">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hold Period (Days) — Profit lock</label>
+            <input class="form-input" type="number" id="pkgHoldDays" placeholder="e.g. 30">
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Itne din tak profit withdraw nahi kar sakte</div>
+          </div>
+        </div>
+        <!-- Live Calculator -->
+        <div style="background:#fff;border-radius:10px;padding:12px;margin-top:8px" id="profitCalc">
+          <div style="font-size:12px;font-weight:800;color:var(--text-dim);margin-bottom:6px">🧮 Live Profit Calculator</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">
+            <div style="text-align:center"><div style="color:var(--text-dim)">Total Investment</div><div style="font-weight:800;color:var(--text)" id="calcInvest">₹—</div></div>
+            <div style="text-align:center"><div style="color:var(--text-dim)">Total Profit</div><div style="font-weight:800;color:var(--green)" id="calcProfit">₹—</div></div>
+            <div style="text-align:center"><div style="color:var(--text-dim)">ROI %</div><div style="font-weight:800;color:var(--blue)" id="calcRoi">—%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Referral & Visibility -->
+      <div style="background:#f5f3ff;border:2px solid #ddd6fe;border-radius:12px;padding:14px 16px">
+        <div style="font-weight:800;font-size:13px;color:#7c3aed;margin-bottom:10px">⚙️ Extra Settings</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Referral Bonus (₹) — referrer ko</label>
+            <input class="form-input" type="number" id="pkgRefBonus" placeholder="e.g. 50 (0 = no bonus)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Package Color</label>
+            <input class="form-input" type="color" id="pkgColor" value="#16a34a" style="height:46px;cursor:pointer">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description (User ko dikhega)</label>
+          <textarea class="form-input" id="pkgDesc" rows="2" placeholder="e.g. Sone ke barabar kamao! Har mahine profit milega..."></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addPkgModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePackage()">💾 Save Package</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT BALANCE MODAL -->
+<div class="modal-bg" id="editBalModal">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-head"><div class="modal-title" id="editBalTitle">Edit Balance</div><button class="modal-close" onclick="closeModal('editBalModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">New Balance (₹)</label><input class="form-input" id="editBalAmt" type="number" placeholder="Enter amount"></div>
+      <div class="form-group"><label class="form-label">Reason / Note</label><input class="form-input" id="editBalNote" placeholder="e.g. Manual recharge"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('editBalModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditBal()">💾 Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ DB ============
+const DB = {
+  get(k){try{return JSON.parse(localStorage.getItem('df_'+k))||null}catch{return null}},
+  set(k,v){localStorage.setItem('df_'+k,JSON.stringify(v))},
+  getUsers(){return this.get('users')||{}},
+  saveUsers(u){this.set('users',u)},
+  getUser(uid){return this.getUsers()[uid]||null},
+  saveUser(uid,data){const u=this.getUsers();u[uid]=data;this.saveUsers(u)},
+  getSession(){return this.get('session')},
+  setSession(uid){this.set('session',uid)},
+  clearSession(){localStorage.removeItem('df_session')},
+  getTxns(){return this.get('txns')||[]},
+  addTxn(t){const ts=this.getTxns();ts.unshift({...t,id:Date.now(),date:new Date().toLocaleString('en-IN')});this.set('txns',ts)},
+  getUserTxns(uid){return this.getTxns().filter(t=>t.uid===uid)},
+  getPackages(){
+    return this.get('packages')||[
+      {id:1,name:'Starter Flock',ducks:5,price:500,profitPerDuck:12,cycleDays:30,emoji:'🐥',color:'#f59e0b'},
+      {id:2,name:'Silver Flock',ducks:15,price:1500,profitPerDuck:14,cycleDays:45,emoji:'🦆',color:'#94a3b8'},
+      {id:3,name:'Gold Flock',ducks:30,price:3000,profitPerDuck:16,cycleDays:60,emoji:'🪙',color:'#f0c96b'},
+      {id:4,name:'Premium Flock',ducks:60,price:6000,profitPerDuck:18,cycleDays:75,emoji:'👑',color:'#c084fc'},
+      {id:5,name:'Elite Farm',ducks:120,price:12000,profitPerDuck:20,cycleDays:90,emoji:'🏆',color:'#34d399'},
+    ];
+  },
+  savePackages(p){this.set('packages',p)},
+  getWithdrawals(){return this.get('withdrawals')||[]},
+  updateRequest(id,status,extra={}){
+    const ws=this.getWithdrawals();
+    const idx=ws.findIndex(w=>w.id===id);
+    if(idx>-1){ws[idx].status=status;ws[idx].processedDate=new Date().toLocaleString('en-IN');Object.assign(ws[idx],extra);}
+    this.set('withdrawals',ws);
+  },
+  seed(){
+    if(!this.get('seeded')){
+      this.saveUser('admin',{uid:'admin',name:'Farm Admin',email:'admin@duckfarm.in',password:'admin123',role:'admin',createdAt:new Date().toLocaleString('en-IN')});
+      ['user1','user2','user3'].forEach((uid,i)=>{
+        this.saveUser(uid,{uid,name:['Rahul Kumar','Priya Sharma','Amit Singh'][i],email:uid+'@demo.com',password:'123456',role:'user',balance:500+i*300,totalInvested:(i+1)*1500,totalProfit:200+i*150,pendingProfit:50+i*30,ducks:[{id:Date.now()+i,name:['Starter Flock','Silver Flock','Gold Flock'][i],emoji:['🐥','🦆','🪙'][i],ducks:[5,15,30][i],price:[500,1500,3000][i],profitPerDuck:[12,14,16][i],cycleDays:[30,45,60][i],purchaseDate:new Date().toLocaleDateString('en-IN'),daysActive:i*5,status:'active',utr:'UTR123'+i}],referralCode:'DUCK100'+i,referredBy:null,referralEarnings:i*50,referralCount:i,upiId:'9876543'+i+'0@upi',phone:'9876543'+i+'0',createdAt:new Date().toLocaleString('en-IN')});
+        this.addTxn({uid,type:'purchase',amount:(i+1)*1500,desc:'Duck package purchase',status:'success'});
+        this.addTxn({uid,type:'profit',amount:200+i*100,desc:'Monthly profit from farm',status:'success'});
+      });
+      // pending requests
+      const ws=[
+        {id:1001,uid:'user1',userName:'Rahul Kumar',type:'recharge',amount:1000,utr:'UTR0001',date:new Date().toLocaleString('en-IN'),status:'pending'},
+        {id:1002,uid:'user2',userName:'Priya Sharma',type:'withdrawal',amount:500,upiId:'priya@upi',date:new Date().toLocaleString('en-IN'),status:'pending'},
+        {id:1003,uid:'user3',userName:'Amit Singh',type:'duck_purchase',pkgName:'Gold Flock',amount:3000,utr:'UTR0003',date:new Date().toLocaleString('en-IN'),status:'pending'},
+      ];
+      this.set('withdrawals',ws);
+      this.set('seeded',true);
+    }
+  }
+};
+DB.seed();
+
+// ============ STATE ============
+let editBalUid=null, editBalType=null, reqFilter='all';
+
+// ============ TOAST ============
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3000);}
+
+// ============ NAV ============
+const pageTitles={dashboard:'📊 Dashboard',users:'👥 All Users',profits:'💰 Distribute Profits',requests:'📋 Pending Requests',packages:'🛒 Duck Packages',transactions:'🔄 All Transactions',settings:'⚙️ Settings'};
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
+  document.getElementById('pg-'+name).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(n=>{if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+name+"'"))n.classList.add('active');});
+  document.getElementById('pageTitle').textContent=pageTitles[name]||name;
+  renderPage(name);
+  if(window.innerWidth<=768)document.getElementById('sidebar').classList.remove('open');
+}
+
+function renderPage(name){
+  if(name==='dashboard')renderDashboard();
+  else if(name==='users')renderUsersTable();
+  else if(name==='profits')renderProfitsList();
+  else if(name==='requests')renderRequests();
+  else if(name==='packages')renderPackagesTable();
+  else if(name==='transactions')renderAllTxns();
+}
+
+// ============ DASHBOARD ============
+function renderDashboard(){
+  const users=Object.values(DB.getUsers()).filter(u=>u.role!=='admin');
+  const totalBal=users.reduce((s,u)=>s+(u.balance||0),0);
+  const totalInvested=users.reduce((s,u)=>s+(u.totalInvested||0),0);
+  const totalProfit=users.reduce((s,u)=>s+(u.totalProfit||0),0);
+  const pending=DB.getWithdrawals().filter(w=>w.status==='pending').length;
+  document.getElementById('dashStats').innerHTML=`
+    <div class="stat-card green"><div class="sc-icon">👥</div><div class="sc-val">${users.length}</div><div class="sc-label">Total Users</div><div class="sc-sub" style="color:var(--green)">↑ Active Farmers</div></div>
+    <div class="stat-card yellow"><div class="sc-icon">💰</div><div class="sc-val">₹${totalInvested}</div><div class="sc-label">Total Invested</div><div class="sc-sub" style="color:var(--yellow)">All time</div></div>
+    <div class="stat-card blue"><div class="sc-icon">🏦</div><div class="sc-val">₹${totalBal}</div><div class="sc-label">User Balances</div><div class="sc-sub" style="color:var(--blue)">In wallets</div></div>
+    <div class="stat-card red"><div class="sc-icon">⏳</div><div class="sc-val">${pending}</div><div class="sc-label">Pending Requests</div><div class="sc-sub" style="color:var(--red)">Need action</div></div>`;
+  // chart
+  const vals=[1200,2300,1800,3400,2100,4500,3200];
+  const mx=Math.max(...vals);
+  document.getElementById('chartBars').innerHTML=vals.map((v,i)=>`<div class="chart-bar" style="height:${(v/mx*100)}%;flex:1" title="Day ${i+1}: ₹${v}"></div>`).join('');
+  // recent users
+  document.getElementById('recentUsers').innerHTML=renderUserTableHTML(users.slice(0,5));
+  // req badge
+  document.getElementById('reqBadge').textContent=pending||'';
+}
+
+// ============ USERS TABLE ============
+function renderUsersTable(highlightUid){
+  const search=(document.getElementById('userSearch')?.value||'').toLowerCase();
+  let users=Object.values(DB.getUsers()).filter(u=>u.role!=='admin');
+  if(search){
+    // If exact UID match, put it first
+    const exact=users.filter(u=>u.uid===search||u.uid.toLowerCase()===search);
+    const rest=users.filter(u=>u.uid!==search&&u.uid.toLowerCase()!==search&&(
+      (u.name||'').toLowerCase().includes(search)||
+      (u.email||'').toLowerCase().includes(search)||
+      (u.phone||'').toLowerCase().includes(search)||
+      (u.referralCode||'').toLowerCase().includes(search)
+    ));
+    users=[...exact,...rest];
+  }
+  document.getElementById('usersTable').innerHTML=renderUserTableHTML(users, highlightUid||( search ? users[0]?.uid : null));
+  // Scroll highlighted row into view
+  const hid=highlightUid||(search?users[0]?.uid:null);
+  if(hid){
+    setTimeout(()=>{
+      const row=document.getElementById('urow_'+hid);
+      if(row){row.scrollIntoView({behavior:'smooth',block:'center'});}
+    },80);
+  }
+}
+
+function renderUserTableHTML(users, highlightUid){
+  if(!users.length)return'<div style="text-align:center;padding:30px;color:var(--text-dim)">No users found</div>';
+  return`<table><thead><tr><th>User</th><th>Balance</th><th>Invested</th><th>Ducks</th><th>Referrals</th><th>Joined</th><th>Actions</th></tr></thead><tbody>`+
+  users.map(u=>{
+    const duckCount=(u.ducks||[]).reduce((s,d)=>s+d.ducks,0);
+    const isHL = u.uid === highlightUid;
+    return`<tr id="urow_${u.uid}" class="${isHL?'row-highlight':''}">
+      <td><div style="font-weight:800">${u.name}</div><div style="font-size:11px;color:var(--text-dim)">${u.email}</div><div style="font-size:10px;color:var(--text-dim);margin-top:1px">ID: ${u.uid}</div></td>
+      <td><span style="font-weight:800;color:var(--green)">₹${u.balance||0}</span></td>
+      <td>₹${u.totalInvested||0}</td>
+      <td>🦆 ${duckCount}</td>
+      <td>${u.referralCount||0}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${(u.createdAt||'').split(',')[0]}</td>
+      <td><div class="btns-row">
+        <button class="btn btn-blue" onclick="viewUser('${u.uid}')">👁 View</button>
+        <button class="btn btn-green" onclick="quickProfit('${u.uid}')">💰 Profit</button>
+        <button class="btn btn-yellow" onclick="editBal('${u.uid}','balance')">✏️ Balance</button>
+      </div></td>
+    </tr>`;}).join('')+'</tbody></table>';
+}
+
+// ============ VIEW USER ============
+function viewUser(uid){
+  const u=DB.getUser(uid);
+  if(!u)return;
+  const duckCount=(u.ducks||[]).reduce((s,d)=>s+d.ducks,0);
+  document.getElementById('userDetailBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div class="stat-card green" style="padding:14px"><div class="sc-val" style="font-size:20px">₹${u.balance||0}</div><div class="sc-label">Balance</div></div>
+      <div class="stat-card yellow" style="padding:14px"><div class="sc-val" style="font-size:20px">₹${u.totalProfit||0}</div><div class="sc-label">Total Profit</div></div>
+      <div class="stat-card blue" style="padding:14px"><div class="sc-val" style="font-size:20px">🦆${duckCount}</div><div class="sc-label">Ducks</div></div>
+    </div>
+    <table style="font-size:13px"><tbody>
+      <tr><td style="font-weight:800;color:var(--text-dim);padding:6px 0">Name</td><td style="padding:6px 0">${u.name}</td></tr>
+      <tr><td style="font-weight:800;color:var(--text-dim);padding:6px 0">Email</td><td style="padding:6px 0">${u.email}</td></tr>
+      <tr><td style="font-weight:800;color:var(--text-dim);padding:6px 0">Phone</td><td style="padding:6px 0">${u.phone||'-'}</td></tr>
+      <tr><td style="font-weight:800;color:var(--text-dim);padding:6px 0">UPI</td><td style="padding:6px 0">${u.upiId||'-'}</td></tr>
+      <tr><td style="font-weight:800;color:var(--text-dim);padding:6px 0">Referral Code</td><td style="padding:6px 0">${u.referralCode||'-'}</td></tr>
+      <tr><td style="font-weight:800;color:var(--text-dim);padding:6px 0">Referrals</td><td style="padding:6px 0">${u.referralCount||0} (₹${u.referralEarnings||0} earned)</td></tr>
+      <tr><td style="font-weight:800;color:var(--text-dim);padding:6px 0">Pending Profit</td><td style="padding:6px 0" style="color:var(--yellow)">₹${u.pendingProfit||0}</td></tr>
+      <tr><td style="font-weight:800;color:var(--text-dim);padding:6px 0">Joined</td><td style="padding:6px 0">${u.createdAt||'-'}</td></tr>
+    </tbody></table>
+    <div style="margin-top:14px"><div style="font-weight:800;margin-bottom:8px">🦆 Duck Packages:</div>
+    ${(u.ducks||[]).length?u.ducks.map(d=>`<div style="background:#f8fafc;border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;align-items:center"><span>${d.emoji} ${d.name} (${d.ducks} ducks)</span><span class="badge ${d.status==='active'?'badge-approved':'badge-pending'}">${d.status}</span></div>`).join(''):'<div style="color:var(--text-dim);font-size:13px">No packages</div>'}
+    </div>`;
+  document.getElementById('blockUserBtn').onclick=()=>{showToast('🚫 '+u.name+' blocked!');closeModal('userDetailModal');};
+  openModal('userDetailModal');
+}
+
+// ============ PROFITS ============
+function renderProfitsList(){
+  const users=Object.values(DB.getUsers()).filter(u=>u.role!=='admin');
+  document.getElementById('profitUserList').innerHTML=users.map(u=>`
+    <div class="user-profit-row">
+      <div class="user-avatar">👤</div>
+      <div class="user-info">
+        <div class="user-name-sm">${u.name}</div>
+        <div class="user-meta">Balance: ₹${u.balance||0} | Ducks: 🦆${(u.ducks||[]).reduce((s,d)=>s+d.ducks,0)} | Pending: ₹${u.pendingProfit||0}</div>
+      </div>
+      <input class="profit-input" type="number" id="profit_${u.uid}" placeholder="₹ amount" min="0">
+      <button class="btn btn-primary" style="padding:7px 14px" onclick="sendProfit('${u.uid}')">Send 💰</button>
+    </div>`).join('');
+}
+
+function sendProfit(uid){
+  const amt=parseFloat(document.getElementById('profit_'+uid)?.value||0);
+  if(!amt||amt<=0){showToast('⚠️ Amount enter karo!');return;}
+  const u=DB.getUser(uid);
+  u.pendingProfit=(u.pendingProfit||0)+amt;
+  DB.saveUser(uid,u);
+  DB.addTxn({uid,type:'profit',amount:amt,desc:'Profit credited by admin',status:'success'});
+  document.getElementById('profit_'+uid).value='';
+  showToast('✅ ₹'+amt+' profit '+u.name+' ke liye add ho gaya!');
+}
+
+function distributeAll(){
+  const users=Object.values(DB.getUsers()).filter(u=>u.role!=='admin');
+  let count=0;
+  users.forEach(u=>{
+    const input=document.getElementById('profit_'+u.uid);
+    const amt=parseFloat(input?.value||0);
+    if(amt>0){
+      u.pendingProfit=(u.pendingProfit||0)+amt;
+      DB.saveUser(u.uid,u);
+      DB.addTxn({uid:u.uid,type:'profit',amount:amt,desc:'Bulk profit distributed by admin',status:'success'});
+      if(input)input.value='';
+      count++;
+    }
+  });
+  if(count===0){showToast('⚠️ Kisi ka bhi amount nahi dala!');return;}
+  showToast('✅ '+count+' users ko profit distribute ho gaya!');
+}
+
+function quickProfit(uid){
+  showPage('profits');
+  setTimeout(()=>{
+    const el=document.getElementById('profit_'+uid);
+    if(el){el.focus();el.scrollIntoView({behavior:'smooth',block:'center'});}
+  },300);
+}
+
+// ============ REQUESTS ============
+function filterRequests(type){reqFilter=type;renderRequests();}
+function renderRequests(){
+  let reqs=DB.getWithdrawals();
+  const pending=reqs.filter(r=>r.status==='pending');
+  document.getElementById('reqRechargeCount').textContent=pending.filter(r=>r.type==='recharge').length;
+  document.getElementById('reqWithdrawCount').textContent=pending.filter(r=>r.type==='withdrawal').length;
+  document.getElementById('reqDuckCount').textContent=pending.filter(r=>r.type==='duck_purchase').length;
+  document.getElementById('reqBadge').textContent=pending.length||'';
+  if(reqFilter!=='all') reqs=reqs.filter(r=>r.type===reqFilter);
+  const typeLabels={recharge:'➕ Recharge',withdrawal:'💸 Withdrawal',duck_purchase:'🦆 Duck Purchase'};
+  document.getElementById('reqTableTitle').textContent='📋 '+(reqFilter==='all'?'All':'')+ ' Requests';
+  if(!reqs.length){document.getElementById('requestsTable').innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim)">No requests found</div>';return;}
+  document.getElementById('requestsTable').innerHTML=`<table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Details</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>`+
+  reqs.map(r=>`<tr>
+    <td style="font-weight:800">${r.userName||r.uid}</td>
+    <td>${typeLabels[r.type]||r.type}</td>
+    <td style="font-weight:800;color:var(--green)">₹${r.amount}</td>
+    <td style="font-size:12px;color:var(--text-dim)">${r.utr?'UTR: '+r.utr:r.upiId?'UPI: '+r.upiId:r.pkgName||'-'}</td>
+    <td style="font-size:11px;color:var(--text-dim)">${(r.date||'').split(',')[0]}</td>
+    <td><span class="badge badge-${r.status}">${r.status}</span></td>
+    <td>${r.status==='pending'?`<div class="btns-row"><button class="btn btn-green" onclick="approveRequest(${r.id})">✅ Approve</button><button class="btn btn-red" onclick="rejectRequest(${r.id})">❌ Reject</button></div>`:'<span style="font-size:12px;color:var(--text-dim)">Processed</span>'}</td>
+  </tr>`).join('')+'</tbody></table>';
+}
+
+function approveRequest(id){
+  const reqs=DB.getWithdrawals();
+  const req=reqs.find(r=>r.id===id);
+  if(!req)return;
+  if(req.type==='recharge'){
+    const u=DB.getUser(req.uid);
+    u.balance=(u.balance||0)+req.amount;
+    u.totalInvested=(u.totalInvested||0)+req.amount;
+    DB.saveUser(u.uid,u);
+    DB.addTxn({uid:u.uid,type:'recharge',amount:req.amount,desc:'Recharge approved by admin',status:'success'});
+  } else if(req.type==='duck_purchase'){
+    const u=DB.getUser(req.uid);
+    u.totalInvested=(u.totalInvested||0)+req.amount;
+    const duck=u.ducks.find(d=>d.utr===req.utr&&d.status==='pending');
+    if(duck)duck.status='active';
+    DB.saveUser(u.uid,u);
+    DB.addTxn({uid:u.uid,type:'purchase',amount:req.amount,desc:'Duck package activated: '+(req.pkgName||''),status:'success'});
+  }
+  DB.updateRequest(id,'approved');
+  renderRequests();
+  showToast('✅ Request approved!');
+}
+
+function rejectRequest(id){
+  const reqs=DB.getWithdrawals();
+  const req=reqs.find(r=>r.id===id);
+  if(!req)return;
+  if(req.type==='withdrawal'){
+    const u=DB.getUser(req.uid);
+    u.balance=(u.balance||0)+req.amount;
+    DB.saveUser(u.uid,u);
+    DB.addTxn({uid:u.uid,type:'recharge',amount:req.amount,desc:'Withdrawal rejected - refunded',status:'success'});
+  }
+  DB.updateRequest(id,'rejected');
+  renderRequests();
+  showToast('❌ Request rejected!');
+}
+
+// ============ PACKAGES ============
+function renderPackagesTable(){
+  const pkgs=DB.getPackages();
+  // Summary cards
+  const active=pkgs.filter(p=>p.status!=='inactive').length;
+  const totalStock=pkgs.reduce((s,p)=>s+(p.stock||0),0);
+  document.getElementById('pkgSummary').innerHTML=`
+    <div class="stat-card green" style="padding:16px"><div class="sc-icon">🛒</div><div class="sc-val">${pkgs.length}</div><div class="sc-label">Total Packages</div></div>
+    <div class="stat-card blue" style="padding:16px"><div class="sc-icon">🟢</div><div class="sc-val">${active}</div><div class="sc-label">Active Packages</div></div>
+    <div class="stat-card yellow" style="padding:16px"><div class="sc-icon">🦆</div><div class="sc-val">${totalStock||'∞'}</div><div class="sc-label">Total Stock</div></div>
+    <div class="stat-card red" style="padding:16px"><div class="sc-icon">🔴</div><div class="sc-val">${pkgs.length-active}</div><div class="sc-label">Inactive</div></div>`;
+
+  const memberLabels={all:'🌍 Sabhi',silver:'🥈 Silver+',gold:'🥇 Gold+',premium:'👑 Premium',admin_assign:'🔐 Admin Only'};
+  const profitTypeLabels={cycle_end:'Cycle End',monthly:'Monthly',weekly:'Weekly',daily:'Daily'};
+  if(!pkgs.length){document.getElementById('packagesTable').innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim)">Koi package nahi — naya banao!</div>';return;}
+
+  document.getElementById('packagesTable').innerHTML=`
+  <table>
+    <thead><tr>
+      <th>Package</th><th>Duck Price</th><th>Ducks / Total</th>
+      <th>Profit/Duck</th><th>Profit Type</th>
+      <th>Cycle</th><th>Hold</th>
+      <th>Min–Max Qty</th><th>Stock</th>
+      <th>Members</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>`+
+  pkgs.map(p=>{
+    const totalProfit=p.ducks*(p.profitPerDuck||0);
+    const roi=p.price?((totalProfit/p.price)*100).toFixed(1):0;
+    return`<tr style="opacity:${p.status==='inactive'?'0.5':'1'}">
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:22px">${p.emoji||'🦆'}</span>
+          <div>
+            <div style="font-weight:800">${p.name}</div>
+            <div style="font-size:11px;color:var(--text-dim)">${p.desc?p.desc.slice(0,30)+'...':''}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-weight:800;color:var(--text)">₹${p.duckPrice||Math.floor((p.price||0)/(p.ducks||1))}</td>
+      <td><span style="font-weight:800">🦆${p.ducks}</span><br><span style="font-size:11px;color:var(--text-dim)">Total: ₹${p.price}</span></td>
+      <td style="color:var(--yellow);font-weight:800">₹${p.profitPerDuck}<br><span style="font-size:10px;color:var(--text-dim)">ROI: ${roi}%</span></td>
+      <td style="font-size:12px">${profitTypeLabels[p.profitType]||'Cycle End'}</td>
+      <td style="font-size:12px">${p.cycleDays} days</td>
+      <td style="font-size:12px;color:var(--red);font-weight:700">${p.holdDays||0} days</td>
+      <td style="font-size:12px">${p.minQty||1} – ${p.maxQty||'∞'}</td>
+      <td style="font-size:12px">${p.stock?p.stock+' left':'∞'}</td>
+      <td><span style="font-size:12px">${memberLabels[p.memberLevel]||'🌍 Sabhi'}</span></td>
+      <td>
+        <span class="badge ${p.status==='inactive'?'badge-rejected':'badge-approved'}">${p.status==='inactive'?'Inactive':'Active'}</span>
+      </td>
+      <td>
+        <div class="btns-row">
+          <button class="btn btn-blue" onclick="editPkg(${p.id})">✏️ Edit</button>
+          <button class="btn ${p.status==='inactive'?'btn-green':'btn-yellow'}" onclick="togglePkgStatus(${p.id})">${p.status==='inactive'?'🟢 On':'🔴 Off'}</button>
+          <button class="btn btn-red" onclick="deletePkg(${p.id})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('')+'</tbody></table>';
+
+  // Populate user & pkg dropdowns for member limits
+  const users=Object.values(DB.getUsers()).filter(u=>u.role!=='admin');
+  const userOpts=users.map(u=>`<option value="${u.uid}">${u.name} (${u.uid})</option>`).join('');
+  const pkgOpts=pkgs.map(p=>`<option value="${p.id}">${p.emoji} ${p.name}</option>`).join('');
+  ['limitUserId','holdUserId'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML='<option value="">-- User Select Karo --</option>'+userOpts;
+  });
+  ['limitPkgId','holdPkgId'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML='<option value="">-- Package Select Karo --</option>'+pkgOpts;
+  });
+  renderMemberLimits();
+  renderMemberHolds();
+}
+
+function openAddPkg(){
+  document.getElementById('pkgModalTitle').textContent='➕ Naya Package Banao';
+  ['pkgName','pkgEmoji','pkgDucks','pkgPrice','pkgDuckPrice','pkgMinQty','pkgMaxQty','pkgStock','pkgProfit','pkgDays','pkgHoldDays','pkgRefBonus','pkgDesc'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value=id==='pkgMinQty'?1:'';
+  });
+  document.getElementById('pkgStatus').value='active';
+  document.getElementById('pkgMemberLevel').value='all';
+  document.getElementById('pkgProfitType').value='cycle_end';
+  document.getElementById('pkgColor').value='#16a34a';
+  document.getElementById('addPkgModal').dataset.editId='';
+  updateCalc();
+  openModal('addPkgModal');
+}
+
+function editPkg(id){
+  const pkg=DB.getPackages().find(p=>p.id===id);
+  if(!pkg)return;
+  document.getElementById('pkgModalTitle').textContent='✏️ Package Edit Karo';
+  document.getElementById('pkgName').value=pkg.name||'';
+  document.getElementById('pkgEmoji').value=pkg.emoji||'🦆';
+  document.getElementById('pkgDucks').value=pkg.ducks||'';
+  document.getElementById('pkgDuckPrice').value=pkg.duckPrice||Math.floor((pkg.price||0)/(pkg.ducks||1))||'';
+  document.getElementById('pkgPrice').value=pkg.price||'';
+  document.getElementById('pkgMinQty').value=pkg.minQty||1;
+  document.getElementById('pkgMaxQty').value=pkg.maxQty||'';
+  document.getElementById('pkgStock').value=pkg.stock||'';
+  document.getElementById('pkgProfit').value=pkg.profitPerDuck||'';
+  document.getElementById('pkgDays').value=pkg.cycleDays||'';
+  document.getElementById('pkgHoldDays').value=pkg.holdDays||'';
+  document.getElementById('pkgRefBonus').value=pkg.refBonus||'';
+  document.getElementById('pkgDesc').value=pkg.desc||'';
+  document.getElementById('pkgStatus').value=pkg.status||'active';
+  document.getElementById('pkgMemberLevel').value=pkg.memberLevel||'all';
+  document.getElementById('pkgProfitType').value=pkg.profitType||'cycle_end';
+  document.getElementById('pkgColor').value=pkg.color||'#16a34a';
+  document.getElementById('addPkgModal').dataset.editId=id;
+  updateCalc();
+  openModal('addPkgModal');
+}
+
+function updateCalc(){
+  const ducks=parseInt(document.getElementById('pkgDucks')?.value)||0;
+  const price=parseInt(document.getElementById('pkgPrice')?.value)||0;
+  const profit=parseInt(document.getElementById('pkgProfit')?.value)||0;
+  const duckPrice=parseInt(document.getElementById('pkgDuckPrice')?.value)||0;
+  // Auto-fill total price
+  if(duckPrice&&ducks&&!price){
+    document.getElementById('pkgPrice').value=duckPrice*ducks;
+  }
+  const totalInvest=price||(duckPrice*ducks);
+  const totalProfit=ducks*profit;
+  const roi=totalInvest?((totalProfit/totalInvest)*100).toFixed(1):0;
+  document.getElementById('calcInvest').textContent=totalInvest?'₹'+totalInvest:'₹—';
+  document.getElementById('calcProfit').textContent=totalProfit?'₹'+totalProfit:'₹—';
+  document.getElementById('calcRoi').textContent=roi?roi+'%':'—%';
+}
+// Attach live calc listeners after modal opens
+setTimeout(()=>{
+  ['pkgDucks','pkgPrice','pkgProfit','pkgDuckPrice'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener('input',updateCalc);
+  });
+},500);
+
+function togglePkgStatus(id){
+  const pkgs=DB.getPackages();
+  const p=pkgs.find(x=>x.id===id);
+  if(!p)return;
+  p.status=p.status==='inactive'?'active':'inactive';
+  DB.savePackages(pkgs);
+  renderPackagesTable();
+  showToast((p.status==='active'?'🟢 Package active':'🔴 Package inactive')+' ho gaya!');
+}
+
+function deletePkg(id){
+  if(!confirm('Pakka delete karna hai?'))return;
+  const pkgs=DB.getPackages().filter(p=>p.id!==id);
+  DB.savePackages(pkgs);
+  renderPackagesTable();
+  showToast('🗑 Package delete ho gaya!');
+}
+
+function savePackage(){
+  const name=document.getElementById('pkgName').value.trim();
+  const emoji=document.getElementById('pkgEmoji').value.trim()||'🦆';
+  const ducks=parseInt(document.getElementById('pkgDucks').value);
+  const duckPrice=parseInt(document.getElementById('pkgDuckPrice').value)||0;
+  const price=parseInt(document.getElementById('pkgPrice').value)||(duckPrice*ducks);
+  const minQty=parseInt(document.getElementById('pkgMinQty').value)||1;
+  const maxQty=parseInt(document.getElementById('pkgMaxQty').value)||0;
+  const stock=parseInt(document.getElementById('pkgStock').value)||0;
+  const profit=parseInt(document.getElementById('pkgProfit').value);
+  const days=parseInt(document.getElementById('pkgDays').value);
+  const holdDays=parseInt(document.getElementById('pkgHoldDays').value)||0;
+  const refBonus=parseInt(document.getElementById('pkgRefBonus').value)||0;
+  const desc=document.getElementById('pkgDesc').value.trim();
+  const status=document.getElementById('pkgStatus').value;
+  const memberLevel=document.getElementById('pkgMemberLevel').value;
+  const profitType=document.getElementById('pkgProfitType').value;
+  const color=document.getElementById('pkgColor').value;
+  if(!name||!ducks||!price||!profit||!days){showToast('⚠️ Name, Ducks, Price, Profit aur Days zaroori hain!');return;}
+  if(minQty>ducks){showToast('⚠️ Min qty ducks se zyada nahi ho sakti!');return;}
+  const pkgs=DB.getPackages();
+  const editId=parseInt(document.getElementById('addPkgModal').dataset.editId||0);
+  const pkgData={name,emoji,ducks,duckPrice:duckPrice||Math.floor(price/ducks),price,minQty,maxQty,stock,profitPerDuck:profit,cycleDays:days,holdDays,refBonus,desc,status,memberLevel,profitType,color};
+  if(editId){
+    const idx=pkgs.findIndex(p=>p.id===editId);
+    if(idx>-1)pkgs[idx]={...pkgs[idx],...pkgData};
+  } else {
+    pkgs.push({id:Date.now(),...pkgData});
+  }
+  DB.savePackages(pkgs);
+  closeModal('addPkgModal');
+  renderPackagesTable();
+  showToast('✅ Package "'+ name +'" save ho gaya!');
+  document.getElementById('addPkgModal').dataset.editId='';
+}
+
+// ---- MEMBER LIMITS ----
+function saveMemberLimit(){
+  const uid=document.getElementById('limitUserId').value;
+  const pkgId=parseInt(document.getElementById('limitPkgId').value);
+  const qty=parseInt(document.getElementById('limitMaxQty').value);
+  if(!uid||!pkgId||!qty){showToast('⚠️ User, Package aur Max Qty sab select karo');return;}
+  const limits=DB.get('memberLimits')||[];
+  const idx=limits.findIndex(l=>l.uid===uid&&l.pkgId===pkgId);
+  if(idx>-1)limits[idx].maxQty=qty;
+  else limits.push({uid,pkgId,maxQty:qty,setDate:new Date().toLocaleDateString('en-IN')});
+  DB.set('memberLimits',limits);
+  renderMemberLimits();
+  showToast('✅ Limit set ho gaya!');
+}
+
+function renderMemberLimits(){
+  const limits=DB.get('memberLimits')||[];
+  const pkgs=DB.getPackages();
+  if(!limits.length){document.getElementById('memberLimitsTable').innerHTML='<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:12px">Koi custom limit set nahi hai</div>';return;}
+  document.getElementById('memberLimitsTable').innerHTML=`<table><thead><tr><th>User</th><th>Package</th><th>Max Ducks</th><th>Set Date</th><th>Action</th></tr></thead><tbody>`+
+  limits.map((l,i)=>{
+    const u=DB.getUser(l.uid);
+    const p=pkgs.find(x=>x.id===l.pkgId);
+    return`<tr><td style="font-weight:800">${u?.name||l.uid}</td><td>${p?p.emoji+' '+p.name:l.pkgId}</td><td style="color:var(--red);font-weight:800">${l.maxQty} ducks</td><td style="font-size:11px;color:var(--text-dim)">${l.setDate||'-'}</td><td><button class="btn btn-red" onclick="removeMemberLimit(${i})">Remove</button></td></tr>`;
+  }).join('')+'</tbody></table>';
+}
+
+function removeMemberLimit(idx){
+  const limits=DB.get('memberLimits')||[];
+  limits.splice(idx,1);DB.set('memberLimits',limits);renderMemberLimits();showToast('Limit hata di!');
+}
+
+// ---- MEMBER HOLD ----
+function saveMemberHold(){
+  const uid=document.getElementById('holdUserId').value;
+  const pkgId=parseInt(document.getElementById('holdPkgId').value);
+  const days=parseInt(document.getElementById('holdDays').value);
+  if(!uid||!pkgId||!days){showToast('⚠️ User, Package aur Hold Days sab daalo');return;}
+  const holds=DB.get('memberHolds')||[];
+  const idx=holds.findIndex(h=>h.uid===uid&&h.pkgId===pkgId);
+  if(idx>-1)holds[idx].days=days;
+  else holds.push({uid,pkgId,days,setDate:new Date().toLocaleDateString('en-IN')});
+  DB.set('memberHolds',holds);
+  renderMemberHolds();
+  showToast('✅ Hold period set ho gaya!');
+}
+
+function renderMemberHolds(){
+  const holds=DB.get('memberHolds')||[];
+  const pkgs=DB.getPackages();
+  if(!holds.length){document.getElementById('memberHoldsTable').innerHTML='<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:12px">Koi custom hold period set nahi hai</div>';return;}
+  document.getElementById('memberHoldsTable').innerHTML=`<table><thead><tr><th>User</th><th>Package</th><th>Hold Days</th><th>Set Date</th><th>Action</th></tr></thead><tbody>`+
+  holds.map((h,i)=>{
+    const u=DB.getUser(h.uid);
+    const p=pkgs.find(x=>x.id===h.pkgId);
+    return`<tr><td style="font-weight:800">${u?.name||h.uid}</td><td>${p?p.emoji+' '+p.name:h.pkgId}</td><td style="color:var(--red);font-weight:800">${h.days} days</td><td style="font-size:11px;color:var(--text-dim)">${h.setDate||'-'}</td><td><button class="btn btn-red" onclick="removeMemberHold(${i})">Remove</button></td></tr>`;
+  }).join('')+'</tbody></table>';
+}
+
+function removeMemberHold(idx){
+  const holds=DB.get('memberHolds')||[];
+  holds.splice(idx,1);DB.set('memberHolds',holds);renderMemberHolds();showToast('Hold period hata diya!');
+}
+
+// ============ TRANSACTIONS ============
+function renderAllTxns(){
+  const txns=DB.getTxns().slice(0,50);
+  if(!txns.length){document.getElementById('allTxns').innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim)">No transactions</div>';return;}
+  const icons={profit:'🥚',referral:'🎁',purchase:'🦆',recharge:'➕',withdraw:'💸',claim:'💰'};
+  const isCredit=t=>['profit','referral','recharge','claim'].includes(t.type);
+  document.getElementById('allTxns').innerHTML=`<table><thead><tr><th>Date</th><th>User</th><th>Type</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead><tbody>`+
+  txns.map(t=>{
+    const u=DB.getUser(t.uid);
+    return`<tr>
+      <td style="font-size:11px;color:var(--text-dim)">${t.date}</td>
+      <td style="font-weight:800;font-size:13px">${u?.name||t.uid}</td>
+      <td>${icons[t.type]||'💳'} ${t.type}</td>
+      <td style="font-size:12px;color:var(--text-dim)">${t.desc}</td>
+      <td style="font-weight:800;color:${isCredit(t)?'var(--green)':'var(--red)'}">${isCredit(t)?'+':'-'}₹${t.amount}</td>
+      <td><span class="badge ${t.status==='success'?'badge-approved':t.status==='pending'?'badge-pending':'badge-rejected'}">${t.status}</span></td>
+    </tr>`;}).join('')+'</tbody></table>';
+}
+
+// ============ EDIT BALANCE ============
+function editBal(uid,type){
+  editBalUid=uid;editBalType=type;
+  const u=DB.getUser(uid);
+  document.getElementById('editBalTitle').textContent='✏️ Edit Balance — '+u.name;
+  document.getElementById('editBalAmt').value=u[type]||0;
+  document.getElementById('editBalNote').value='';
+  openModal('editBalModal');
+}
+function saveEditBal(){
+  const amt=parseFloat(document.getElementById('editBalAmt').value);
+  const note=document.getElementById('editBalNote').value.trim()||'Manual update by admin';
+  if(isNaN(amt)){showToast('⚠️ Valid amount enter karo');return;}
+  const u=DB.getUser(editBalUid);
+  const old=u[editBalType]||0;
+  u[editBalType]=amt;
+  DB.saveUser(editBalUid,u);
+  DB.addTxn({uid:editBalUid,type:'recharge',amount:Math.abs(amt-old),desc:note,status:'success'});
+  closeModal('editBalModal');
+  renderUsersTable();
+  showToast('✅ Balance update ho gaya!');
+}
+
+// ============ ADD USER ============
+function addNewUser(){
+  const name=document.getElementById('newUserName').value.trim();
+  const email=document.getElementById('newUserEmail').value.trim();
+  const phone=document.getElementById('newUserPhone').value.trim();
+  const pass=document.getElementById('newUserPass').value;
+  const bal=parseFloat(document.getElementById('newUserBal').value)||0;
+  const upi=document.getElementById('newUserUpi').value.trim();
+  if(!name||!email||!pass){showToast('⚠️ Name, email aur password zaroori hai');return;}
+  const users=DB.getUsers();
+  if(Object.values(users).find(u=>u.email===email)){showToast('❌ Email already exists!');return;}
+  const uid='u'+Date.now();
+  DB.saveUser(uid,{uid,name,email,phone,password:pass,role:'user',balance:bal,totalInvested:0,totalProfit:0,pendingProfit:0,ducks:[],referralCode:'DUCK'+Math.floor(1000+Math.random()*9000),referredBy:null,referralEarnings:0,referralCount:0,upiId:upi,createdAt:new Date().toLocaleString('en-IN')});
+  if(bal>0)DB.addTxn({uid,type:'recharge',amount:bal,desc:'Initial balance by admin',status:'success'});
+  closeModal('addUserModal');
+  renderUsersTable();
+  showToast('✅ User "'+name+'" add ho gaya!');
+}
+
+// ============ SETTINGS ============
+function saveSettings(){showToast('✅ UPI settings saved!');}
+function sendBroadcast(){const msg=document.getElementById('broadcastMsg').value.trim();if(!msg){showToast('⚠️ Message likhو');return;}document.getElementById('broadcastMsg').value='';showToast('📢 Message sabko bhej diya!');}
+function changePassword(){
+  const p1=document.getElementById('newPass').value;
+  const p2=document.getElementById('confirmPass').value;
+  if(!p1||!p2){showToast('⚠️ Password enter karo');return;}
+  if(p1!==p2){showToast('❌ Passwords match nahi kar rahe!');return;}
+  const admin=DB.getUser('admin');
+  admin.password=p1;
+  DB.saveUser('admin',admin);
+  document.getElementById('newPass').value='';
+  document.getElementById('confirmPass').value='';
+  showToast('✅ Password change ho gaya!');
+}
+
+// ============ MODAL ============
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+
+// ============ GLOBAL SEARCH ============
+let searchResults = [], searchIdx = -1;
+
+function onGlobalSearch() {
+  const q = document.getElementById('globalSearchInput').value.trim().toLowerCase();
+  const dd = document.getElementById('searchDropdown');
+  searchIdx = -1;
+  if (!q) { dd.classList.remove('open'); dd.innerHTML = ''; searchResults = []; return; }
+
+  const users = Object.values(DB.getUsers()).filter(u => u.role !== 'admin');
+  searchResults = users.filter(u =>
+    (u.uid||'').toLowerCase().includes(q) ||
+    (u.name||'').toLowerCase().includes(q) ||
+    (u.email||'').toLowerCase().includes(q) ||
+    (u.phone||'').toLowerCase().includes(q) ||
+    (u.referralCode||'').toLowerCase().includes(q)
+  );
+
+  if (!searchResults.length) {
+    dd.innerHTML = '<div class="search-empty">🔍 Koi user nahi mila</div>';
+    dd.classList.add('open'); return;
+  }
+
+  dd.innerHTML = searchResults.map((u, i) => {
+    const initials = (u.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const ducks = (u.ducks||[]).reduce((s,d)=>s+d.ducks,0);
+    return `<div class="search-result-item" id="sri_${i}" onclick="selectSearchResult('${u.uid}')">
+      <div class="sri-avatar">${initials}</div>
+      <div class="sri-info">
+        <div class="sri-name">${u.name}</div>
+        <div class="sri-meta">ID: ${u.uid} &nbsp;|&nbsp; 🦆${ducks} ducks &nbsp;|&nbsp; ${u.email}</div>
+      </div>
+      <div class="sri-bal">₹${u.balance||0}</div>
+    </div>`;
+  }).join('');
+  dd.classList.add('open');
+}
+
+function onSearchKey(e) {
+  const dd = document.getElementById('searchDropdown');
+  if (!dd.classList.contains('open') || !searchResults.length) {
+    if (e.key === 'Enter') onGlobalSearch();
+    return;
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    searchIdx = Math.min(searchIdx + 1, searchResults.length - 1);
+    highlightSearchItem();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    searchIdx = Math.max(searchIdx - 1, 0);
+    highlightSearchItem();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (searchIdx >= 0) selectSearchResult(searchResults[searchIdx].uid);
+    else if (searchResults.length === 1) selectSearchResult(searchResults[0].uid);
+  } else if (e.key === 'Escape') {
+    dd.classList.remove('open');
+  }
+}
+
+function highlightSearchItem() {
+  document.querySelectorAll('.search-result-item').forEach((el,i) => {
+    el.classList.toggle('highlighted', i === searchIdx);
+    if (i === searchIdx) el.scrollIntoView({block:'nearest'});
+  });
+}
+
+function selectSearchResult(uid) {
+  const dd = document.getElementById('searchDropdown');
+  dd.classList.remove('open');
+  document.getElementById('globalSearchInput').value = '';
+  searchResults = []; searchIdx = -1;
+
+  // Switch to users page and highlight the row
+  showPage('users');
+  setTimeout(() => {
+    const search = document.getElementById('userSearch');
+    if (search) { search.value = uid; renderUsersTable(uid); }
+  }, 150);
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  if (!document.getElementById('globalSearchWrap').contains(e.target)) {
+    document.getElementById('searchDropdown').classList.remove('open');
+  }
+});
+
+// ============ LOGOUT ============
+function doLogout(){DB.clearSession();window.location.href='user-app.html';}
+
+// ============ AUTH CHECK ============
+const sess=DB.getSession();
+const adminUser=DB.getUser('admin');
+// Admin can always access this page
+
+// ============ INIT ============
+renderDashboard();
+</script>
+</body>
+</html>
